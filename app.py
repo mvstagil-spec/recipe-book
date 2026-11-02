@@ -14,12 +14,8 @@ DB_PASSWORD = os.getenv("DB_PASSWORD")
 app = Flask(__name__, static_folder="images", static_url_path="/images")
 CATEGORIES = ("Завтрак", "Обед", "Ужин")
 
-# Соответствие названия рецепта и имени изображения без расширения.
-# Изображения размещаются в папке images рядом с app.py.
 PHOTO_FILES = {'Яичница': 'yaichnica', 'Омлет': 'omlet', 'Блины': 'blini', 'Оладьи': 'oladi', 'Сырники': 'syrniki', 'Гренки': 'grenki', 'Яичница с беконом': 'Yaychnitsa_s_bekonom', 'Сосиски с яйцом': 'Sosiski_s_yaytsem', 'Омлет со шпинатом и сыром': 'Omlet_so_shpinatom_i_syrom', 'Тост с авокадо и яйцом': 'Tost_s_avokado_i_yaytsem', 'Бутерброд с сыром и помидором': 'Buterbrod_s_syrom_i_pomidorom', 'Бутерброд с колбасой и огурцом': 'Buterbrod_s_kolbasoy_i_ogurtsom', 'Бутерброд с рыбой': 'Buterbrod_s_rybοi', 'Лаваш с сыром и овощами': 'Lavash_s_syrom_i_ovoshchami', 'Творог со сметаной и вареньем': 'Tvorog_so_smetanoj_i_varenjem', 'Йогурт с ягодами': 'Joghurt_s_jagodami', 'Йогурт с орехами и семечками': 'Joghurt_s_jagodami', 'Чиа с молоком и вареньем': 'Chia_s_molokom_i_varenem', 'Кефир с бананом и яблоком': 'Kefir_s_bananom_i_yablokom', 'Фрукты со сметаной': 'Frukty_so_smetanoj', 'Рис отварной': 'Ris_otvarnoj', 'Гречка': 'Grečka', 'Перловка с луком и морковью': 'Perlovka_s_lukom_i_morkovju', 'Булгур с болгарским перцем': 'bulgur_s_bolgarskim_percem', 'Рожки с томатной пастой': 'rozhi_s_tomatnoj_pastoj', 'Картофель жареный с луком': 'kartofel_zharenyj_s_lukom', 'Тушёная капуста': 'tusyonaya_kapusta', 'Борщ': 'borsh', 'Куриный суп': 'kurinyj_sup', 'Гречка с курицей': 'grechka_s_kuricej', 'Свинина с картофелем': 'svinina_s_kartofelem', 'Котлеты': 'kotlety', 'Макароны с фаршем': 'makarony_s_farshem', 'Жареное филе белой рыбы': 'zharenoe_file_beloy_ryby', 'Филе красной рыбы с укропом': 'file_krasnoj_ryby_s_ukropom', 'Гороховый суп': 'gorohovyj_sup', 'Чечевица с овощами': 'chechevitsa_s_ovoshchami', 'Фасоль в томате': 'fasol_v_tomate', 'Овощной салат': 'ovoschnoy_salat', 'Рыбный суп': 'rybnyy_sup', 'Курица в томате': 'kurica_v_tomate', 'Гуляш': 'gulyash', 'Подлива из фарша': 'podliva_iz_farsha', 'Куриное филе в сливках': 'kurinoe_file_v_slivkakh', 'Куриные бёдра с паприкой': 'kurinye_byedra_s_paprikoj', 'Куриные голени в томате': 'kurinye_goleni_v_tomate', 'Куриное филе в йогурте': 'kurinoe_file_v_yogurte', 'Куриное филе в кукурузных хлопьях': 'kurinoe_file_v_kukuruznykh_hlopyakh', 'Котлеты из говяжьего фарша': 'kotlety_iz_govyazhego_farsha', 'Котлеты из свиного фарша': 'kotlety_iz_svinogo_farsha', 'Котлеты из смешанного фарша': 'kotlety_iz_smeshannogo_farsha', 'Котлеты из куриного фарша': 'kotlety_iz_kurinogo_farsha', 'Куриная печень с луком': 'kurinaya_pechen_s_lukom', 'Говяжья печень в сметане': 'govyazhya_pechen_v_smetane', 'Куриные сердечки в сметане': 'kurinye_serdtsechki_v_smetane', 'Жареный минтай': 'zharenyj_mintaj', 'Треска в духовке': 'treska_v_duhovke', 'Лосось с брокколи': 'Losel_s_brokkoli', 'Горбуша тушёная с морковью': 'Gorbusha_tusyonaya_s_morkovyu', 'Креветки в соевом соусе': 'Krevetki_v_soevom_souse', 'Жареный кальмар': 'Zherenyj_kalmar', 'Салат с тунцом': 'Salat_s_tuncom', 'Картофель с консервированной горбушей': 'Kartofel_s_konservirovannoj_gorbushej', 'Спагетти с говяжьим фаршем': 'Spagetti_s_govyazhim_farshom', 'Перья с куриным филе': 'Perya_s_kurinym_file', 'Рожки по-флотски': 'Rozhi_po-flotski', 'Рис белый': 'Ris_belyy', 'Бурый рис с куриным фаршем': 'Buryj_ris_s_kurinym_farshom', 'Гречка с шампиньонами': 'Grechka_s_shampinjonami', 'Булгур с кабачком': 'bulgur_s_kabachkom', 'Кускус с овощами': 'kuskus_s_ovoshchami', 'Овсянка с сыром': 'ovsyanka_s_syrom', 'Овощное рагу на ужин': 'ovoschnoye_ragu_na_uzhin', 'Баклажаны в протёртых томатах': 'baklazhany_v_protyortykh_tomatax', 'Цветная капуста в сухарях': 'cvetnaya_kapusta_v_suharyah', 'Тушёная белокочанная капуста': 'tusyonaya_belokochannaya_kapusta', 'Свекла с чесноком': 'svekla_s_chesnokom', 'Тыква с тимьяном': 'tykva_s_timyanom', 'Жареный картофель на ужин': 'zharenyj_kartofel_na_uzhin', 'Фасоль с томатной пастой': 'fasol_s_tomatnoj_pastoj', 'Вешенки в сметане': 'veshenki_v_smetane', 'Белые грибы с картофелем': 'Belyye_griby_s_kartofelem', 'Салат с перепелиными яйцами': 'Salat_s_perepelinymi_yaytsami', 'Чили с консервированной фасолью': 'Chili_s_konservirovannoy_fasolyu', 'Нут с куркумой': 'Nut_s_kurkumoj', 'Салат с горошком и кукурузой': 'Salat_s_gorokhom_i_kukuruzoy', 'Солянка с маслинами': 'Solyanka_s_maslinami', 'Салат с оливками': 'Salat_s_olivkami', 'Творожная запеканка': 'Tvorozhnaya_zapekanka', 'Горячий лаваш с сыром': 'Goryachiy_lavash_s_syrom', 'Лаваш с творожным сыром': 'Lavash_s_tvorozhnym_syrom', 'Горошек с морковью': 'Goroshek_s_morkovyu'}
 
-
-# Форматы изображений, которые браузер обычно может показывать.
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".jfif", ".avif", ".gif"}
 
 
@@ -31,7 +27,6 @@ def _photo_key(value):
     return re.sub(r"[^a-z0-9]", "", value)
 
 
-# Дополнительные варианты названий, допускающие расхождения в транслитерации.
 PHOTO_ALTERNATIVES = {
     "Яичница с беконом": ("eggs_with_bacon",),
     "Свекла с чесноком": ("svyekla_s_chesnokom", "svekla_s_chesnokom"),
@@ -524,7 +519,6 @@ def index():
               <label class="filter-option"><input type="radio" name="mode" value="ready" {ready_checked}><span>Без покупок</span></label>
               <button class="show-all-button" type="submit" name="action" value="show_all">Показать все рецепты</button>
             </div>
-            <p class="note">Вводите только названия через запятую, без количества. Соль, масло и базовые специи считаются имеющимися дома.</p>
           </form>
         </div>
         <div class="results">
