@@ -94,7 +94,7 @@ def get_db_connection():
     )
 
 
-def find_recipes(category, user_ingredients, only_ready=False):
+def find_recipes(category, user_ingredients, only_ready=False, show_all=False):
     """Учитывает ингредиенты по названиям; количество нужно только для рецептов."""
     sql = """
         SELECT r.id, r.name, r.instructions, r.cooking_time,
@@ -116,15 +116,21 @@ def find_recipes(category, user_ingredients, only_ready=False):
             cur.execute(sql, (category,))
             rows = cur.fetchall()
 
-    provided = {aliases.get(normalize(term), normalize(term)) for term in user_ingredients}
+    provided = {aliases.get(normalize(term), normalize(term)) for term in user_ingredients if normalize(term)}
+    if not provided and not show_all:
+        return []
     dishes = {}
     for recipe_id, name, instructions, minutes, ingredient, canonical, is_staple, quantity, unit in rows:
         dish = dishes.setdefault(recipe_id, {
             "name": name, "instructions": instructions or "", "minutes": minutes,
-            "ingredients": [], "missing": [], "available_count": 0, "needed_count": 0
+            "ingredients": [], "missing": [], "available_count": 0, "needed_count": 0, "query_matches": 0, "query_products": set()
         })
         normalized_name = normalize(canonical or ingredient)
-        matched = is_staple or normalized_name in provided
+        explicitly_matched = normalized_name in provided
+        matched = is_staple or explicitly_matched
+        if explicitly_matched:
+            dish["query_products"].add(normalized_name)
+            dish["query_matches"] = len(dish["query_products"])
         if not is_staple:
             dish["needed_count"] += 1
             if matched:
@@ -138,12 +144,22 @@ def find_recipes(category, user_ingredients, only_ready=False):
 
     found = []
     for dish in dishes.values():
-        if only_ready:
+        # В обычном поиске достаточно хотя бы одного введенного продукта.
+        # Совпадения считаются с учетом синонимов; базовые продукты сами по себе
+        # не делают рецепт подходящим (если их не ввел пользователь).
+        if not show_all and not (provided & dish["query_products"]):
+            continue
+        if only_ready and not show_all:
             if not dish["missing"]:
                 found.append(dish)
         else:
             found.append(dish)
-    found.sort(key=lambda d: (len(d["missing"]) != 0, -d["available_count"] / max(d["needed_count"], 1), len(d["missing"]), d["name"]))
+    # Вначале блюда с наибольшим числом совпадений запроса.
+    # При равном числе совпадений выше блюда с меньшим числом недостающих продуктов.
+    found.sort(key=lambda d: (-d["query_matches"] if not show_all else 0,
+                              len(d["missing"]) != 0,
+                              -d["available_count"] / max(d["needed_count"], 1),
+                              len(d["missing"]), d["name"]))
     return found
 
 
@@ -164,6 +180,7 @@ def index():
     search_query = ""
     mode = "all"
     searched = request.method == "POST"
+    show_all = False
     recipes = []
     error_message = ""
     if searched:
@@ -175,8 +192,11 @@ def index():
             mode = "all"
         search_query = request.form.get("ingredients", "")[:1500]
         entered = [x.strip() for x in search_query.split(",") if x.strip()]
+        show_all = request.form.get("action") == "show_all"
+        if show_all:
+            search_query = ""  # Не оставляем в поле неиспользуемый при просмотре запрос.
         try:
-            recipes = find_recipes(category, entered, mode == "ready")
+            recipes = find_recipes(category, entered, mode == "ready", show_all=show_all)
         except psycopg2.Error:
             app.logger.exception("Ошибка при поиске рецептов")
             error_message = "Не удалось получить рецепты. Проверьте подключение к базе данных."
@@ -239,6 +259,7 @@ def index():
                     letter-spacing: -0.025em;
                     margin: 0 0 8px;
                     color: var(--primary-dark);
+                    text-align: center;
                 }}
 
                 .subtitle {{
@@ -447,6 +468,19 @@ def index():
                     font-size: 1rem;
                 }}
 
+                .show-all-button {{
+                    display: inline-block;
+                    margin-top: 0;
+                    padding: 9px 16px;
+                    border-radius: 999px;
+                    background: white;
+                    color: var(--primary-dark);
+                    border: 1.5px solid var(--primary);
+                    font-size: 0.95rem;
+                }}
+                .show-all-button:hover {{
+                    background: var(--primary-soft);
+                }}
                 .filters {{ display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }}
                 .filter-option {{ cursor:pointer; }}
                 .filter-option input {{ position:absolute; opacity:0; }}
@@ -458,9 +492,6 @@ def index():
                 @media (max-width: 640px) {{
                     body {{
                         padding: 32px 16px;
-                    }}
-                    h1 {{
-                        font-size: 1.875rem;
                     }}
                     .search-line {{
                         flex-direction: column;
@@ -486,11 +517,12 @@ def index():
             <div class="meals">{category_buttons}</div>
             <div class="search-line">
               <input type="text" name="ingredients" value="{escape(search_query, quote=True)}" placeholder="Например: яйцо, молоко, сыр" autocomplete="off">
-              <button type="submit">Найти</button>
+              <button type="submit" name="action" value="search">Найти</button>
             </div>
             <div class="filters">
               <label class="filter-option"><input type="radio" name="mode" value="all" {all_checked}><span>Все рецепты</span></label>
               <label class="filter-option"><input type="radio" name="mode" value="ready" {ready_checked}><span>Без покупок</span></label>
+              <button class="show-all-button" type="submit" name="action" value="show_all">Показать все рецепты</button>
             </div>
             <p class="note">Вводите только названия через запятую, без количества. Соль, масло и базовые специи считаются имеющимися дома.</p>
           </form>
@@ -502,7 +534,7 @@ def index():
     elif searched:
         html += f'<p class="stats">Найдено рецептов: {len(recipes)}</p>'
         if not recipes:
-            html += '<div class="empty-msg">Подходящих рецептов не найдено. Попробуйте другой список продуктов или режим «Все рецепты».</div>'
+            html += '<div class="empty-msg">Подходящих рецептов не найдено. Попробуйте другие продукты или нажмите «Показать все рецепты».</div>'
         for recipe in recipes:
             parts = []
             for ingredient in recipe["ingredients"]:
